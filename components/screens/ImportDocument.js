@@ -22,53 +22,38 @@ export default class ImportDocument extends React.Component {
    handleChoosePhoto  = async () => {
 
 
+     if (Platform.OS === 'android') {
+       PermissionsAndroid.requestMultiple([
+         PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+         PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE]
+       ).then((result) => {
+         if (
+           result['android.permission.READ_EXTERNAL_STORAGE']
+           && result['android.permission.WRITE_EXTERNAL_STORAGE'] === 'granted') {
+           (async () => {
+             const res = await
+               DocumentPicker.pick({
+                 type: [DocumentPicker.types.images, DocumentPicker.types.pdf],
+                 copyTo: "cachesDirectory"
+               });
+             console.log(
+               res.fileCopyUri,
+               res.type, // mime type
+               res.name,
+               res.size
+             );
+             console.log('Ahmed is getting path : ', res);
+             this.recognizeTextFromImage(res.fileCopyUri)
+             //  this.recognizeTextFromImage(response.uri)
+           })();
+           console.log('Yes ');
+         } else {
+           //   this.refs.toast.show('Please Go into Settings -> Applications -> APP_NAME -> Permissions and Allow permissions to continue');
+           console.log('No !');
+         }
+       });
+     }
 
-
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        {
-          title: "Camera Permission",
-          message:
-            "App needs access to your camera " +
-            "so you can take awesome pictures.",
-          buttonNeutral: "Ask Me Later",
-          buttonNegative: "Cancel",
-          buttonPositive: "OK"
-        }
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log("You can use the camera");
-        try {
-          const res = await DocumentPicker.pick({
-            type: [DocumentPicker.types.images, DocumentPicker.types.pdf],
-            copyTo: "cachesDirectory"
-          });
-          console.log(
-            res.fileCopyUri,
-            res.type, // mime type
-            res.name,
-            res.size
-          );
-          console.log('Ahmed is getting path : ', res);
-          this.recognizeTextFromImage(res.fileCopyUri)
-         //  this.recognizeTextFromImage(response.uri)
-         
-        } catch (err) {
-          if (DocumentPicker.isCancel(err)) {
-            // User cancelled the picker, exit any dialogs or menus and move on
-          } else {
-            throw err;
-          }
-        }
-      } else {
-        console.log("Camera permission denied");
-      }
-    } catch (err) {
-      console.warn(err);
-    }
-
-//----------------------------------------------------------------
   }
 
 
@@ -100,6 +85,10 @@ export default class ImportDocument extends React.Component {
     try {
       this.setState({ textString: 'Processing......' })
       const tesseractOptions = {};
+
+
+      console.log("path: ", path)
+
       const recognizedText = await TesseractOcr.recognize(
         path,
         LANG_ENGLISH,
